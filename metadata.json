@@ -1,0 +1,6 @@
+{
+  "name": "BookBridge",
+  "description": "An academic peer-to-peer resource exchange and bookstore rental platform connecting juniors, seniors, alumni, colleges, and book stores.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

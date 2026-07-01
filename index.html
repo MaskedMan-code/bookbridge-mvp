@@ -1,0 +1,1474 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BookBridge — Academic Book Marketplace</title>
+    <!-- Premium Web Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+    <!-- Tailwind CSS v3 CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase JS Client v2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              bg: '#faf7f0',
+              ink: '#1a1208',
+              accent: '#c8410a',
+              secondary: '#2563a8',
+              cardBg: '#ffffff',
+            },
+            fontFamily: {
+              serif: ['Playfair Display', 'Georgia', 'serif'],
+              sans: ['Inter', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background-color: #faf7f0;
+        color: #1a1208;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: rgba(26, 18, 8, 0.1);
+        border-radius: 3px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(26, 18, 8, 0.2);
+      }
+    </style>
+  </head>
+  <body class="font-sans antialiased selection:bg-[#c8410a]/10 selection:text-[#c8410a]">
+
+    <!-- APP HEADER & NAVIGATION -->
+    <header class="sticky top-0 z-40 bg-[#ffffff]/80 backdrop-blur-md border-b border-[#1a1208]/10" id="app-header">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <!-- Logo and Brand -->
+        <div class="flex items-center gap-2">
+          <div class="p-2 bg-[#c8410a] text-[#faf7f0] rounded-lg shadow-sm">
+            <i data-lucide="book-open" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <span class="font-serif text-xl font-bold tracking-tight">BookBridge</span>
+            <span class="text-[9px] font-mono block text-[#2563a8] font-bold uppercase tracking-wider leading-none">Campus Marketplace</span>
+          </div>
+        </div>
+
+        <!-- Navigation Controls -->
+        <div class="flex items-center gap-3 flex-wrap">
+          <!-- Auth Block -->
+          <div id="auth-controls" class="flex items-center gap-2">
+            <!-- Signed-out View -->
+            <div id="signed-out-actions" class="flex items-center gap-2">
+              <button onclick="openAuthModal('login')" id="btn-login-trigger" class="px-3.5 py-1.5 text-xs font-semibold text-[#1a1208] hover:bg-[#1a1208]/5 rounded-md transition cursor-pointer">
+                Sign In
+              </button>
+              <button onclick="openAuthModal('register')" id="btn-register-trigger" class="px-3.5 py-1.5 text-xs font-bold bg-[#1a1208] text-[#faf7f0] hover:bg-[#1a1208]/90 rounded-md transition cursor-pointer shadow-sm">
+                Register
+              </button>
+            </div>
+
+            <!-- Signed-in View -->
+            <div id="signed-in-actions" class="hidden flex items-center gap-3">
+              <div class="text-right hidden sm:block">
+                <span class="text-xs font-bold block" id="user-display-name">Alex Carter</span>
+                <span class="text-[10px] text-[#2563a8] font-semibold block" id="user-display-college">University of Washington</span>
+              </div>
+              <button onclick="openPostModal()" id="btn-post-trigger" class="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-[#c8410a] text-white hover:bg-[#c8410a]/90 rounded-md transition cursor-pointer shadow-sm">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>List a Book</span>
+              </button>
+              <button onclick="handleLogout()" id="btn-logout" class="flex items-center gap-1 px-3 py-1.5 border border-[#1a1208]/20 text-[#1a1208]/80 hover:text-red-600 hover:bg-red-50 text-xs font-semibold rounded-md transition cursor-pointer" title="Log Out">
+                <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN APP CANVAS -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="main-content">
+      
+      <!-- HERO CONTENT -->
+      <section class="text-center py-10 sm:py-14 border-b border-[#1a1208]/5 mb-10" id="hero-section">
+        <h1 class="font-serif text-4xl sm:text-5xl font-bold tracking-tight text-[#1a1208] max-w-3xl mx-auto leading-tight">
+          Bridging Knowledge, <br class="hidden sm:inline" />
+          <span class="italic text-[#c8410a]">One Book</span> at a Time.
+        </h1>
+        <p class="mt-4 text-sm sm:text-base text-[#1a1208]/70 max-w-2xl mx-auto">
+          An elegant academic marketplace built specifically for university students. Securely buy, trade, or share course textbooks with peers on your campus.
+        </p>
+        
+        <!-- Live Counters -->
+        <div class="flex justify-center gap-8 mt-6 text-xs font-mono font-medium text-[#1a1208]/60">
+          <span class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-4 h-4 text-[#2563a8]"></i> <strong id="cnt-books" class="text-[#1a1208]">12</strong> Active Listings</span>
+          <span class="flex items-center gap-1.5"><i data-lucide="users" class="w-4 h-4 text-[#2563a8]"></i> <strong id="cnt-campuses" class="text-[#1a1208]">6</strong> Campus Hubs</span>
+        </div>
+
+        <!-- SEARCH CONTAINER -->
+        <div class="max-w-2xl mx-auto mt-8 bg-white p-2.5 rounded-xl border border-[#1a1208]/10 shadow-sm flex flex-col sm:flex-row gap-2">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-[#1a1208]/40"></i>
+            <input type="text" id="input-search" oninput="triggerSearch()" placeholder="Search by book title, author, or keywords..." class="w-full pl-9 pr-4 py-2 text-sm bg-transparent outline-none text-[#1a1208] placeholder-[#1a1208]/40" />
+          </div>
+          <div class="flex gap-2 shrink-0 border-t sm:border-t-0 sm:border-l border-[#1a1208]/10 pt-2 sm:pt-0 sm:pl-2">
+            <select id="filter-subject" onchange="triggerSearch()" class="px-3 py-2 text-xs bg-[#faf7f0] rounded border-0 outline-none text-[#1a1208]/80 font-semibold cursor-pointer">
+              <option value="All">All Subjects</option>
+              <option value="Engineering">Engineering</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Mathematics">Mathematics</option>
+              <option value="Medicine & Health">Medicine</option>
+              <option value="Business & Finance">Business</option>
+              <option value="Arts & Humanities">Humanities</option>
+              <option value="General Science">Science</option>
+            </select>
+            <select id="filter-price" onchange="triggerSearch()" class="px-3 py-2 text-xs bg-[#faf7f0] rounded border-0 outline-none text-[#1a1208]/80 font-semibold cursor-pointer">
+              <option value="All">All Prices</option>
+              <option value="Free">Free / Donated</option>
+              <option value="Trade">Barter Trade</option>
+              <option value="Paid">Paid Listings</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- NAVIGATION TABS -->
+      <div class="flex items-center justify-between border-b border-[#1a1208]/10 mb-8" id="navigation-tabs">
+        <div class="flex gap-1">
+          <button onclick="switchTab('marketplace')" id="tab-marketplace" class="px-5 py-3 text-sm font-bold border-b-2 border-[#c8410a] text-[#c8410a] flex items-center gap-2 transition cursor-pointer">
+            <i data-lucide="grid" class="w-4 h-4"></i>
+            <span>Available Books</span>
+          </button>
+          <button onclick="switchTab('chats')" id="tab-chats" class="px-5 py-3 text-sm font-semibold text-[#1a1208]/60 hover:text-[#1a1208] border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer relative">
+            <i data-lucide="message-square" class="w-4 h-4"></i>
+            <span>My Chats</span>
+            <span id="chat-unread-badge" class="hidden absolute top-1.5 right-1 px-1.5 py-0.5 text-[8px] font-mono font-black bg-[#c8410a] text-white rounded-full">!</span>
+          </button>
+        </div>
+        <div class="text-xs text-[#1a1208]/40 italic font-medium hidden sm:block" id="realtime-badge">
+          Realtime updates synced automatically
+        </div>
+      </div>
+
+      <!-- TAB 1: BOOK MARKETPLACE GRID -->
+      <div id="panel-marketplace" class="block">
+        <div id="books-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Book Cards will be dynamically injected here -->
+        </div>
+        
+        <!-- Empty State -->
+        <div id="books-empty-state" class="hidden text-center py-16 bg-white rounded-xl border border-[#1a1208]/5 p-6 max-w-md mx-auto mt-6">
+          <div class="p-3 bg-[#1a1208]/5 text-[#1a1208]/60 inline-block rounded-full mb-3">
+            <i data-lucide="book" class="w-8 h-8"></i>
+          </div>
+          <h3 class="font-serif text-lg font-bold text-[#1a1208]">No Books Found</h3>
+          <p class="text-xs text-[#1a1208]/60 mt-2 max-w-sm mx-auto">
+            Try adjusting your search terms or filters to locate specific books, or list a new textbook yourself!
+          </p>
+          <button onclick="openPostModal()" class="mt-4 px-4 py-2 bg-[#1a1208] text-white text-xs font-bold rounded hover:bg-[#1a1208]/90 transition cursor-pointer">List your first book</button>
+        </div>
+      </div>
+
+      <!-- TAB 2: IN-APP CHAT CENTER -->
+      <div id="panel-chats" class="hidden">
+        <div class="bg-white border border-[#1a1208]/10 rounded-xl overflow-hidden shadow-sm grid grid-cols-1 md:grid-cols-3 min-h-[500px]">
+          <!-- Chat Threads Sidebar -->
+          <div class="border-r border-[#1a1208]/10 flex flex-col h-[500px]">
+            <div class="p-4 border-b border-[#1a1208]/10 bg-[#faf7f0]/50 shrink-0">
+              <h3 class="text-xs font-bold text-[#1a1208] uppercase tracking-wider">Conversations</h3>
+            </div>
+            <!-- Thread list container -->
+            <div id="chat-threads-list" class="flex-1 overflow-y-auto custom-scrollbar divide-y divide-[#1a1208]/5">
+              <!-- Dynamically rendered threads -->
+            </div>
+          </div>
+
+          <!-- Chat Messages Area -->
+          <div class="md:col-span-2 flex flex-col h-[500px] bg-[#faf7f0]/20" id="chat-pane-empty">
+            <div class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+              <div class="p-3 bg-[#2563a8]/5 text-[#2563a8] rounded-full mb-4">
+                <i data-lucide="message-square" class="w-8 h-8"></i>
+              </div>
+              <h4 class="font-serif text-lg font-bold text-[#1a1208]">Your Academic Chats</h4>
+              <p class="text-xs text-[#1a1208]/60 mt-2 max-w-xs mx-auto">
+                Select a book conversation from the sidebar or click "Message Seller" on any listing to negotiate directly.
+              </p>
+            </div>
+          </div>
+
+          <div class="md:col-span-2 hidden flex-col h-[500px] bg-white" id="chat-pane-active">
+            <!-- Active Thread Header -->
+            <div class="p-4 border-b border-[#1a1208]/10 flex items-center justify-between bg-white shrink-0">
+              <div class="flex items-center gap-3">
+                <div class="p-2 bg-[#2563a8]/10 rounded-lg text-[#2563a8]">
+                  <i data-lucide="user" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <h4 class="text-xs font-bold text-[#1a1208]" id="active-chat-seller-name">Seller Name</h4>
+                  <span class="text-[10px] text-[#2563a8] font-bold block leading-none mt-1" id="active-chat-seller-college">University of Toronto</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] font-semibold text-[#1a1208]/60 block">Regarding Book</span>
+                <span class="text-xs font-bold text-[#c8410a] block max-w-[180px] truncate" id="active-chat-book-title">Thermodynamics 101</span>
+              </div>
+            </div>
+
+            <!-- Message Log Area -->
+            <div id="chat-message-log" class="flex-1 p-4 overflow-y-auto bg-[#faf7f0]/30 space-y-3 custom-scrollbar">
+              <!-- Interactive logs -->
+            </div>
+
+            <!-- Message Input Composer -->
+            <form id="chat-message-composer" class="p-3 border-t border-[#1a1208]/10 flex gap-2 bg-white shrink-0">
+              <input type="text" id="chat-message-input" required placeholder="Type your negotiation or secure message..." class="flex-1 px-4 py-2 text-xs border border-[#1a1208]/15 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#2563a8]" autocomplete="off" />
+              <button type="submit" id="btn-chat-send" class="px-4 py-2 bg-[#2563a8] text-white text-xs font-bold rounded hover:bg-[#2563a8]/90 transition cursor-pointer flex items-center gap-1.5 shadow-sm">
+                <span>Send</span>
+                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-[#1a1208] text-[#faf7f0]/80 py-12 mt-20 border-t border-[#1a1208]/20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <div class="p-1.5 bg-[#c8410a] text-white rounded">
+              <i data-lucide="book-open" class="w-4 h-4"></i>
+            </div>
+            <span class="font-serif text-lg font-bold text-[#faf7f0]">BookBridge</span>
+          </div>
+          <p class="text-xs text-[#faf7f0]/60 leading-relaxed">
+            The secure, collaborative peer-to-peer textbook marketplace. Build confidence, save money, and exchange knowledge on your campus.
+          </p>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-[#faf7f0] mb-3">Verified Badges & Trust</h4>
+          <p class="text-xs text-[#faf7f0]/60 leading-relaxed">
+            All users must verify their institutional email or campus ID before negotiating trades to keep transaction logs fully secure and authenticated.
+          </p>
+        </div>
+      </div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 pt-6 border-t border-[#faf7f0]/10 text-center text-[11px] text-[#faf7f0]/40 font-mono">
+        © 2026 BookBridge Academic Marketplace. Crafted with exquisite precision & modern responsive structures.
+      </div>
+    </footer>
+
+    <!-- MODAL: AUTHENTICATION (LOGIN & REGISTRATION) -->
+    <div id="auth-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1a1208]/60 backdrop-blur-sm animate-fade-in">
+      <div class="bg-white rounded-xl max-w-md w-full border border-[#1a1208]/15 shadow-2xl overflow-hidden flex flex-col">
+        <!-- Tabs for Switching Modal Actions -->
+        <div class="grid grid-cols-2 text-center border-b border-[#1a1208]/10 bg-[#faf7f0]/50">
+          <button onclick="switchAuthTab('login')" id="auth-tab-login" class="py-3 text-xs font-bold text-[#1a1208] border-b-2 border-[#c8410a]">Sign In</button>
+          <button onclick="switchAuthTab('register')" id="auth-tab-register" class="py-3 text-xs font-bold text-[#1a1208]/50 hover:text-[#1a1208] border-b-2 border-transparent">Create Account</button>
+        </div>
+        
+        <div class="p-6">
+          <p id="auth-modal-intro" class="text-xs text-[#1a1208]/60 mb-4 text-center">
+            Sign in to access secure book listings, message sellers, and manage your chats.
+          </p>
+
+          <!-- Standard Login Form -->
+          <form id="form-login" class="space-y-4">
+            <div>
+              <label class="block text-[10px] font-bold text-[#1a1208]/70 uppercase tracking-wide mb-1">Campus Email Address</label>
+              <input type="email" id="login-email" required placeholder="email@university.edu" class="w-full px-3 py-2 text-xs border border-[#1a1208]/15 rounded bg-white text-sm outline-none focus:ring-1 focus:ring-[#2563a8]" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-[#1a1208]/70 uppercase tracking-wide mb-1">Password</label>
+              <input type="password" id="login-password" required placeholder="••••••••" class="w-full px-3 py-2 text-xs border border-[#1a1208]/15 rounded bg-white text-sm outline-none focus:ring-1 focus:ring-[#2563a8]" />
+            </div>
+            <button id="login-submit-btn" type="submit" class="w-full py-2.5 bg-[#1a1208] text-white hover:bg-[#1a1208]/90 text-xs font-bold rounded-md transition cursor-pointer shadow-sm">
+              Sign In to BookBridge
+            </button>
+          </form>
+
+          <!-- Registration Form -->
+          <form id="form-register" class="hidden space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] font-bold text-[#1a1208]/70 uppercase tracking-wide mb-1">First Name</label>
+                <input type="text" id="register-first-name" required placeholder="e.g. Sarah" class="w-full px-3 py-2 text-xs border border-[#1a1208]/15 rounded bg-white text-sm outline-none focus:ring-1 focus:ring-[#2563a8]" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-[#1a1208]/70 uppercase tracking-wide mb-1">College Name</label>
+                <input type="text" id="register-college" required placeholder="e.g. Stanford University" class="w-full px-3 py-2 text-xs border border-[#1a1208]/15 rounded bg-white text-sm outline-none focus:ring-1 focus:ring-[#2563a8]" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-[#1a1208]/70 uppercase tracking-wide mb-1">Campus Email</label>
+              <input type="email" id="register-email" required placeholder="name@college.edu" class="w-full px-3 py-2 text-xs border border-[#1a1208]/15 rounded bg-white text-sm outline-none focus:ring-1 focus:ring-[#2563a8]" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-[#1a1208]/70 uppercase tracking-wide mb-1">Secure Password</label>
+              <input type="password" id="register-password" required placeholder="Min. 6 characters" class="w-full px-3 py-2 text-xs border border-[#1a1208]/15 rounded bg-white text-sm outline-none focus:ring-1 focus:ring-[#2563a8]" />
+            </div>
+            <button id="register-submit-btn" type="submit" class="w-full py-2.5 bg-[#c8410a] text-white hover:bg-[#c8410a]/90 text-xs font-bold rounded-md transition cursor-pointer shadow-sm">
+              Create My Account
+            </button>
+          </form>
+
+          <!-- Cancel/Close Button -->
+          <div class="mt-4 pt-3 border-t border-[#1a1208]/5 flex justify-end">
+            <button type="button" onclick="closeAuthModal()" class="text-xs font-semibold text-[#1a1208]/50 hover:text-[#1a1208]">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: POST / LIST A NEW BOOK -->
+    <div id="post-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1a1208]/60 backdrop-blur-sm">
+      <div class="bg-white rounded-xl max-w-lg w-full border border-[#1a1208]/15 shadow-2xl overflow-hidden">
+        <div class="p-5 border-b border-[#1a1208]/10 bg-[#faf7f0]/50 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="plus-circle" class="text-[#c8410a] w-5 h-5"></i>
+            <h3 class="font-serif text-lg font-bold text-[#1a1208]">List Academic Book</h3>
+          </div>
+          <button onclick="closePostModal()" class="text-[#1a1208]/50 hover:text-[#1a1208]"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        
+        <form id="form-post-book" class="p-6 space-y-4">
+          <div>
+            <label class="block text-[10px] font-bold text-[#1a1208]/70 uppercase tracking-wide mb-1">Textbook Title</label>
+            <input type="text" id="post-title" required placeholder="e.g. Principles of Neural Science" class="w-full px-3 py-2 text-xs border border-[#1a1208]/15 rounded bg-white text-sm outline-none focus:ring-1 focus:ring-[#2563a8]" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-[#1a1208]/70 uppercase tracking-wide mb-1">Author(s)</label>
+              <input type="text" id="post-author" required placeholder="e.g. Eric Kandel" class="w-full px-3 py-2 text-xs border border-[#1a1208]/15 rounded bg-white text-sm outline-none focus:ring-1 focus:ring-[#2563a8]" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-[#1a1208]/70 uppercase tracking-wide mb-1">Subject Area</label>
+              <select id="post-subject" required class="w-full px-3 py-2 text-xs border border-[#1a1208]/15 rounded bg-white text-sm outline-none focus:ring-1 focus:ring-[#2563a8] cursor-pointer">
+                <option value="Computer Science">Computer Science</option>
+                <option value="Engineering">Engineering</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Medicine & Health">Medicine & Health</option>
+                <option value="Business & Finance">Business & Finance</option>
+                <option value="Arts & Humanities">Arts & Humanities</option>
+                <option value="General Science">General Science</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-[#1a1208]/70 uppercase tracking-wide mb-1">Price Type</label>
+              <select id="post-price-type" onchange="togglePriceAmountField()" required class="w-full px-3 py-2 text-xs border border-[#1a1208]/15 rounded bg-white text-sm outline-none focus:ring-1 focus:ring-[#2563a8] cursor-pointer">
+                <option value="Fixed Price">Fixed Price (USD)</option>
+                <option value="Trade">Barter Trade</option>
+                <option value="Free">Free Donation</option>
+              </select>
+            </div>
+            <div id="post-price-amount-container">
+              <label class="block text-[10px] font-bold text-[#1a1208]/70 uppercase tracking-wide mb-1">Price Amount ($)</label>
+              <input type="number" id="post-price-amount" min="0" placeholder="e.g. 45" class="w-full px-3 py-2 text-xs border border-[#1a1208]/15 rounded bg-white text-sm outline-none focus:ring-1 focus:ring-[#2563a8]" />
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-[#1a1208]/5 flex justify-end gap-2">
+            <button type="button" onclick="closePostModal()" class="px-4 py-2 text-xs border border-[#1a1208]/10 rounded hover:bg-[#1a1208]/5 text-[#1a1208]/60 font-semibold cursor-pointer">Cancel</button>
+            <button type="submit" class="px-5 py-2 bg-[#c8410a] text-white text-xs font-bold rounded hover:bg-[#c8410a]/90 transition cursor-pointer shadow-sm">Post Marketplace Listing</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: SQL DATABASE SCHEMA GENERATOR / HELPER -->
+    <div id="schema-help-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1a1208]/60 backdrop-blur-sm">
+      <div class="bg-white rounded-xl max-w-2xl w-full border border-[#1a1208]/15 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+        <div class="p-5 border-b border-[#1a1208]/10 bg-[#faf7f0]/50 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="terminal" class="text-[#2563a8] w-5 h-5"></i>
+            <h3 class="font-serif text-lg font-bold text-[#1a1208]">Supabase Database SQL Blueprint</h3>
+          </div>
+          <button onclick="closeSchemaHelpModal()" class="text-[#1a1208]/50 hover:text-[#1a1208]"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-6 overflow-y-auto custom-scrollbar space-y-4">
+          <p class="text-xs text-[#1a1208]/70">
+            Copy and paste the SQL script below directly into your <strong>Supabase SQL Editor</strong> to create all tables with proper Row Level Security (RLS) rules and references.
+          </p>
+          <pre class="bg-slate-900 text-slate-100 p-4 rounded-lg text-xs font-mono overflow-x-auto select-all" id="sql-blueprint">
+-- 1. Create Profile Table linking to Supabase auth users
+create table public.profiles (
+  id uuid references auth.users on delete cascade primary key,
+  first_name text not null,
+  college text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS on profiles
+alter table public.profiles enable row level security;
+create policy "Allow public read access to profiles" on public.profiles for select using (true);
+create policy "Allow individual insert to profiles" on public.profiles for insert with check (auth.uid() = id);
+create policy "Allow users to update profiles" on public.profiles for update using (auth.uid() = id);
+
+-- 2. Create Books Table
+create table public.books (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  author text not null,
+  subject text not null,
+  price_type text not null,
+  price_amount numeric,
+  seller_id uuid references auth.users on delete cascade not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS on books
+alter table public.books enable row level security;
+create policy "Allow public read access to books" on public.books for select using (true);
+create policy "Allow authenticated inserts to books" on public.books for insert with check (auth.uid() = seller_id);
+create policy "Allow seller to update/delete books" on public.books for all using (auth.uid() = seller_id);
+
+-- 3. Create Messages Table for Campus Chats
+create table public.messages (
+  id uuid default gen_random_uuid() primary key,
+  book_id uuid references public.books on delete cascade,
+  sender_id uuid references auth.users on delete cascade not null,
+  receiver_id uuid references auth.users on delete cascade not null,
+  content text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS on messages
+alter table public.messages enable row level security;
+create policy "Allow users to read their own messages" on public.messages for select using (auth.uid() = sender_id or auth.uid() = receiver_id);
+create policy "Allow authenticated inserts for messages" on public.messages for insert with check (auth.uid() = sender_id);
+          </pre>
+          <p class="text-[10px] text-amber-600 font-semibold bg-amber-50 p-2.5 rounded border border-amber-200">
+            Note: Remember to enable Realtime for your "messages" table in the Database -> Replication settings on your Supabase Dashboard!
+          </p>
+        </div>
+        <div class="p-4 border-t border-[#1a1208]/10 bg-[#faf7f0]/50 flex justify-end">
+          <button onclick="closeSchemaHelpModal()" class="px-5 py-2 bg-[#1a1208] text-white text-xs font-bold rounded hover:bg-[#1a1208]/90 cursor-pointer">Done</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- DYNAMIC CORE JAVASCRIPT & SUPABASE FLOW -->
+    <script>
+      // ----------------------------------------------------
+      // GLOBAL STATE & CACHE
+      // ----------------------------------------------------
+      let activeSession = null;
+      let activeProfile = null;
+      let activeTab = "marketplace";
+      let activeChatTargetUserId = null;
+      let activeChatBookId = null;
+      let realtimeSubscription = null;
+
+      window.profileCache = window.profileCache || {};
+      window.bookCache = window.bookCache || {};
+
+      // ----------------------------------------------------
+      // BULLETPROOF SIGN-OUT FUNCTION
+      // ----------------------------------------------------
+      window.signOutUser = async function(e) {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        console.log("Sign-out triggered");
+        const client = window.db;
+        if (client) {
+          const { error } = await client.auth.signOut();
+          if (error) {
+            alert("Sign out failed: " + error.message);
+          } else {
+            alert("Signed out successfully!");
+            location.reload(); // Hard reload to clear UI state
+          }
+        } else {
+          alert("Database client not initialized.");
+        }
+      };
+      window.handleLogout = window.signOutUser;
+
+      // ----------------------------------------------------
+      // CONNECTION MANAGEMENT & INITIALIZATION
+      // ----------------------------------------------------
+
+      // 1. HARDCODED KEYS (Ensure these are wrapped in quotes!)
+      const SUPABASE_URL = "https://ibaqcojegmfxtwjmjgjk.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliYXFjb2plZ21meHR3am1qZ2prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NDA5NTEsImV4cCI6MjA5ODMxNjk1MX0.-jMKo_bpYYQTUw-Ls42BMRkpI9TO6L5-KtBCRpaKLko";
+
+      // 2. SINGLETON INITIALIZATION
+      if (!window.db) {
+          window.db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+              auth: {
+                  persistSession: true,
+                  autoRefreshToken: true,
+                  storageKey: 'bookbridge-auth-token', // Custom key to prevent collisions
+                  storage: window.localStorage
+              }
+          });
+      }
+
+      // 3. BULLETPROOF AUTH LISTENER
+      window.db.auth.onAuthStateChange(async (event, session) => {
+          console.log("Auth Event Fired:", event); // This will prove the script is alive
+          
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+              if (session) {
+                  console.log("Valid session found. User is logged in.");
+                  // Add your code here to update the UI to the logged-in state
+                  activeSession = session;
+                  if (session.user) {
+                    // Close any open modals
+                    closeAuthModal();
+                    const authModal = document.getElementById('auth-modal');
+                    if (authModal) {
+                      authModal.classList.add('hidden');
+                      authModal.classList.remove('active');
+                    }
+                    await fetchProfileAndSync(session.user.id);
+                  }
+              }
+          } 
+          
+          if (event === 'SIGNED_OUT') {
+              console.log("User signed out. Clearing UI.");
+              // Add your code here to show the login buttons
+              activeSession = null;
+              activeProfile = null;
+              updateAuthUI(null);
+          }
+          refreshUI();
+      });
+
+      // ----------------------------------------------------
+      // CONNECTION STATUS UI UPDATE
+      // ----------------------------------------------------
+      function updateConnUI(isLive, reason = "") {
+        const dot = document.getElementById('conn-status-dot');
+        const text = document.getElementById('conn-status-text');
+        
+        if (!dot || !text) return;
+        
+        if (isLive) {
+          dot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
+          text.innerHTML = `<strong>Live Supabase Connected</strong>`;
+          text.className = "text-emerald-800 text-[11px]";
+        } else {
+          dot.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
+          text.innerHTML = `<strong>${reason || 'Disconnected'}</strong>`;
+          text.className = "text-amber-800 text-[11px]";
+        }
+      }
+
+      // 4. ON-LOAD SESSION CHECK
+      window.addEventListener('DOMContentLoaded', async () => {
+          console.log("Page loaded. Checking for existing session...");
+          
+          if (window.db) {
+            updateConnUI(true);
+          } else {
+            updateConnUI(false, "Keys Missing");
+          }
+
+          const { data, error } = await window.db.auth.getSession();
+          
+          if (error) {
+              console.error("Session check failed:", error.message);
+          } else if (data.session) {
+              console.log("Session restored successfully!");
+              // Update UI to logged-in state here
+              activeSession = data.session;
+              updateAuthUI(true);
+              await fetchProfileAndSync(data.session.user.id);
+              refreshUI();
+          } else {
+              console.log("No active session. User needs to log in.");
+              updateAuthUI(null);
+              refreshUI();
+          }
+
+          // Set up Realtime for live changes
+          setupRealtimeSubscription();
+
+          bindUIEventListeners();
+          if (window.lucide) {
+            window.lucide.createIcons();
+          }
+      });
+
+      // ----------------------------------------------------
+      // HMR-PROOF EVENT BINDING
+      // ----------------------------------------------------
+      function bindUIEventListeners() {
+        const formLogin = document.getElementById('form-login');
+        if (formLogin) {
+          formLogin.onsubmit = async (e) => {
+            e.preventDefault();
+            console.log("Login submit fired via form submit");
+            
+            const emailInput = document.getElementById('login-email');
+            const passwordInput = document.getElementById('login-password');
+            const email = emailInput ? emailInput.value.trim() : '';
+            const password = passwordInput ? passwordInput.value : '';
+
+            if (!email || !password) {
+              alert("Please fill in all fields.");
+              return;
+            }
+
+            if (!window.db) {
+              alert("Database client is not initialized. Please configure your live keys.");
+              return;
+            }
+
+            const { data, error } = await window.db.auth.signInWithPassword({ email, password });
+            if (error) {
+              alert("Login Error: " + error.message);
+            } else {
+              alert("Login Success!");
+              if (emailInput) emailInput.value = '';
+              if (passwordInput) passwordInput.value = '';
+              closeAuthModal();
+              if (data?.user) {
+                await fetchProfileAndSync(data.user.id);
+              }
+            }
+          };
+        }
+
+        const formRegister = document.getElementById('form-register');
+        if (formRegister) {
+          formRegister.onsubmit = async (e) => {
+            e.preventDefault();
+            console.log("Register submit fired via form submit");
+            
+            const firstNameInput = document.getElementById('register-first-name');
+            const collegeInput = document.getElementById('register-college');
+            const emailInput = document.getElementById('register-email');
+            const passwordInput = document.getElementById('register-password');
+
+            const firstName = firstNameInput ? firstNameInput.value.trim() : '';
+            const college = collegeInput ? collegeInput.value.trim() : '';
+            const email = emailInput ? emailInput.value.trim() : '';
+            const password = passwordInput ? passwordInput.value : '';
+
+            if (!firstName || !college || !email || !password) {
+              alert("Please fill in all fields.");
+              return;
+            }
+
+            if (password.length < 6) {
+              alert("Password must be at least 6 characters long.");
+              return;
+            }
+
+            if (!window.db) {
+              alert("Database client is not initialized. Please configure your live keys.");
+              return;
+            }
+
+            const { data, error } = await window.db.auth.signUp({ email, password });
+            if (error) {
+              alert("Registration Error: " + error.message);
+            } else {
+              alert("Registration Success! Setting up profile...");
+              if (data?.user) {
+                const { error: profileError } = await window.db.from('profiles').insert({
+                  id: data.user.id,
+                  first_name: firstName,
+                  college: college
+                });
+                if (profileError) {
+                  console.error("Profile association failed:", profileError);
+                  alert("Auth was created, but public profile entry failed: " + profileError.message);
+                } else {
+                  alert("Registered successfully! Your profile has been bound to public.profiles table.");
+                }
+                await fetchProfileAndSync(data.user.id);
+              } else {
+                alert("Registration submitted! Please verify your email check if configuration is mandatory.");
+              }
+              
+              if (firstNameInput) firstNameInput.value = '';
+              if (collegeInput) collegeInput.value = '';
+              if (emailInput) emailInput.value = '';
+              if (passwordInput) passwordInput.value = '';
+              closeAuthModal();
+            }
+          };
+        }
+
+        const logoutBtn = document.getElementById('btn-logout');
+        if (logoutBtn) {
+          const newLogoutBtn = logoutBtn.cloneNode(true);
+          logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
+          newLogoutBtn.onclick = window.signOutUser;
+          newLogoutBtn.addEventListener('click', window.signOutUser);
+        }
+
+        const formPostBook = document.getElementById('form-post-book');
+        if (formPostBook) {
+          formPostBook.onsubmit = (e) => {
+            handlePostBookSubmit(e);
+          };
+        }
+
+        const chatMessageComposer = document.getElementById('chat-message-composer');
+        if (chatMessageComposer) {
+          chatMessageComposer.onsubmit = (e) => {
+            handleSendMessage(e);
+          };
+        }
+      }
+
+      async function fetchProfileAndSync(userId) {
+        if (!window.db) return;
+        try {
+          const { data, error } = await window.db
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+          if (error) {
+            console.error("Profile fetch returned error (handling gracefully):", error.message || error);
+            activeProfile = {
+              id: userId,
+              first_name: "Student",
+              college: "Campus"
+            };
+          } else if (!data) {
+            console.warn("No profile data returned from single query, using fallback.");
+            activeProfile = {
+              id: userId,
+              first_name: "Student",
+              college: "Campus"
+            };
+          } else {
+            activeProfile = data;
+          }
+          
+          updateAuthUI(activeProfile);
+        } catch (e) {
+          console.error("Profile fetch caught exception:", e);
+          activeProfile = {
+            id: userId,
+            first_name: "Student",
+            college: "Campus"
+          };
+          updateAuthUI(activeProfile);
+        }
+      }
+
+      function updateAuthUI(profile) {
+        const loggedOutActions = document.getElementById('signed-out-actions');
+        const loggedInActions = document.getElementById('signed-in-actions');
+        
+        if (profile) {
+          if (loggedOutActions) loggedOutActions.classList.add('hidden');
+          if (loggedInActions) loggedInActions.classList.remove('hidden');
+          
+          const userDisplayName = document.getElementById('user-display-name');
+          const userDisplayCollege = document.getElementById('user-display-college');
+          if (userDisplayName) userDisplayName.innerText = profile.first_name || '';
+          if (userDisplayCollege) userDisplayCollege.innerText = profile.college || '';
+          
+          // Call a function to fetch and display the book feed
+          fetchMarketplaceBooks();
+        } else {
+          if (loggedOutActions) loggedOutActions.classList.remove('hidden');
+          if (loggedInActions) loggedInActions.classList.add('hidden');
+          
+          // Clear the book feed and show a "Please log in to view books" message
+          const booksGrid = document.getElementById('books-grid');
+          if (booksGrid) {
+            booksGrid.innerHTML = `
+              <div class="col-span-full py-16 text-center">
+                <i data-lucide="lock" class="w-8 h-8 text-[#1a1208]/30 mx-auto mb-2"></i>
+                <p class="text-[#1a1208]/60 text-sm font-semibold">Please log in to view textbook listings.</p>
+                <p class="text-[#1a1208]/40 text-xs mt-1">Connect with other student buyers and sellers on your campus.</p>
+              </div>
+            `;
+            if (window.lucide) {
+              window.lucide.createIcons();
+            }
+          }
+        }
+      }
+
+      // ----------------------------------------------------
+      // REALTIME SUBSCRIPTIONS
+      // ----------------------------------------------------
+      function setupRealtimeSubscription() {
+        if (!window.db) return;
+
+        if (realtimeSubscription) {
+          window.db.removeChannel(realtimeSubscription);
+        }
+
+        realtimeSubscription = window.db
+          .channel('messages-channel')
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'messages' },
+            (payload) => {
+              console.log('Realtime message insert payload:', payload);
+              const newMsg = payload.new;
+              if (activeSession && newMsg && newMsg.receiver_id === activeSession.user.id) {
+                fetchChatsAndMessages();
+              }
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'books' },
+            () => {
+              console.log('Realtime book table update, reloading...');
+              fetchMarketplaceBooks();
+            }
+          )
+          .subscribe();
+      }
+
+      // ----------------------------------------------------
+      // NAVIGATION TAB SYSTEM
+      // ----------------------------------------------------
+      function switchTab(tabId) {
+        activeTab = tabId;
+        const tabMarket = document.getElementById('tab-marketplace');
+        const tabChats = document.getElementById('tab-chats');
+        const panelMarket = document.getElementById('panel-marketplace');
+        const panelChats = document.getElementById('panel-chats');
+
+        if (tabId === "marketplace") {
+          tabMarket.className = "px-5 py-3 text-sm font-bold border-b-2 border-[#c8410a] text-[#c8410a] flex items-center gap-2 transition cursor-pointer";
+          tabChats.className = "px-5 py-3 text-sm font-semibold text-[#1a1208]/60 hover:text-[#1a1208] border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer relative";
+          panelMarket.classList.remove('hidden');
+          panelChats.classList.add('hidden');
+          fetchMarketplaceBooks();
+        } else {
+          tabChats.className = "px-5 py-3 text-sm font-bold border-b-2 border-[#c8410a] text-[#c8410a] flex items-center gap-2 transition cursor-pointer relative";
+          tabMarket.className = "px-5 py-3 text-sm font-semibold text-[#1a1208]/60 hover:text-[#1a1208] border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer";
+          panelMarket.classList.add('hidden');
+          panelChats.classList.remove('hidden');
+          fetchChatsAndMessages();
+        }
+      }
+
+      // ----------------------------------------------------
+      // AUTHENTICATION MODALS & LOGOUT
+      // ----------------------------------------------------
+      function openAuthModal(mode) {
+        document.getElementById('auth-modal').classList.remove('hidden');
+        switchAuthTab(mode);
+      }
+
+      function closeAuthModal() {
+        document.getElementById('auth-modal').classList.add('hidden');
+      }
+
+      function switchAuthTab(mode) {
+        const tabLogin = document.getElementById('auth-tab-login');
+        const tabRegister = document.getElementById('auth-tab-register');
+        const formLogin = document.getElementById('form-login');
+        const formRegister = document.getElementById('form-register');
+        const introText = document.getElementById('auth-modal-intro');
+
+        if (mode === 'login') {
+          tabLogin.className = "py-3 text-xs font-bold text-[#1a1208] border-b-2 border-[#c8410a]";
+          tabRegister.className = "py-3 text-xs font-bold text-[#1a1208]/50 hover:text-[#1a1208] border-b-2 border-transparent";
+          formLogin.classList.remove('hidden');
+          formRegister.classList.add('hidden');
+          introText.innerText = "Sign in to access secure book listings, message sellers, and manage your chats.";
+        } else {
+          tabRegister.className = "py-3 text-xs font-bold text-[#1a1208] border-b-2 border-[#c8410a]";
+          tabLogin.className = "py-3 text-xs font-bold text-[#1a1208]/50 hover:text-[#1a1208] border-b-2 border-transparent";
+          formLogin.classList.add('hidden');
+          formRegister.classList.remove('hidden');
+          introText.innerText = "Join BookBridge to negotiate directly with students on your campus hub.";
+        }
+      }
+
+
+
+      function handleLogout() {
+        window.signOutUser();
+      }
+
+      // ----------------------------------------------------
+      // MARKETPLACE LISTING MODALS
+      // ----------------------------------------------------
+      function openPostModal() {
+        if (!activeSession) {
+          alert("Please Sign In first to post a textbook listing.");
+          openAuthModal('login');
+          return;
+        }
+        document.getElementById('post-modal').classList.remove('hidden');
+        togglePriceAmountField();
+      }
+
+      function closePostModal() {
+        document.getElementById('post-modal').classList.add('hidden');
+      }
+
+      function togglePriceAmountField() {
+        const priceType = document.getElementById('post-price-type').value;
+        const container = document.getElementById('post-price-amount-container');
+        if (priceType === 'Fixed Price') {
+          container.style.opacity = '1';
+          container.querySelector('input').disabled = false;
+          container.querySelector('input').required = true;
+        } else {
+          container.style.opacity = '0.3';
+          container.querySelector('input').disabled = true;
+          container.querySelector('input').value = '';
+          container.querySelector('input').required = false;
+        }
+      }
+
+      async function handlePostBookSubmit(e) {
+        if (e && typeof e.preventDefault === 'function') {
+          e.preventDefault();
+        }
+        
+        const titleInput = document.getElementById('post-title');
+        const authorInput = document.getElementById('post-author');
+        const subjectInput = document.getElementById('post-subject');
+        const priceTypeInput = document.getElementById('post-price-type');
+        const priceAmountInput = document.getElementById('post-price-amount');
+
+        const title = titleInput.value.trim();
+        const author = authorInput.value.trim();
+        const subject = subjectInput.value;
+        const priceType = priceTypeInput.value;
+        const priceAmountVal = priceAmountInput.value;
+        const priceAmount = priceAmountVal ? parseFloat(priceAmountVal) : null;
+
+        if (window.db) {
+          // Live Supabase Insert
+          const { error } = await window.db.from('books').insert({
+            title,
+            author,
+            subject,
+            price_type: priceType,
+            price_amount: priceAmount,
+            seller_id: activeSession.user.id
+          });
+
+          if (error) {
+            alert("Failed to list book: " + error.message);
+          } else {
+            alert("Textbook listed successfully on public.books table!");
+            titleInput.value = '';
+            authorInput.value = '';
+            priceAmountInput.value = '';
+            closePostModal();
+            fetchMarketplaceBooks();
+          }
+        } else {
+          alert("Database client is not initialized.");
+        }
+      }
+
+      // ----------------------------------------------------
+      // MARKETPLACE FETCH & RENDER
+      // ----------------------------------------------------
+      async function fetchMarketplaceBooks() {
+        const booksGrid = document.getElementById('books-grid');
+        const emptyState = document.getElementById('books-empty-state');
+        booksGrid.innerHTML = `
+          <div class="col-span-full py-20 flex flex-col items-center justify-center">
+            <span class="animate-spin rounded-full h-8 w-8 border-4 border-[#c8410a] border-t-transparent mb-2"></span>
+            <span class="text-xs font-mono text-[#1a1208]/60">Loading textbook listings...</span>
+          </div>
+        `;
+
+        if (window.db) {
+          try {
+            const { data, error } = await window.db
+              .from('books')
+              .select('*, profiles(first_name, college)')
+              .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            renderBooksGrid(data || []);
+          } catch (e) {
+            console.error("Live fetch error:", e);
+            booksGrid.innerHTML = `
+              <div class="col-span-full py-16 text-center">
+                <i data-lucide="alert-triangle" class="w-8 h-8 text-amber-500 mx-auto mb-2"></i>
+                <p class="text-[#1a1208]/60 text-sm font-semibold">Failed to fetch textbook listings.</p>
+                <p class="text-[#1a1208]/40 text-xs mt-1">${e.message || e}</p>
+              </div>
+            `;
+            if (window.lucide) {
+              window.lucide.createIcons();
+            }
+          }
+        } else {
+          booksGrid.innerHTML = `
+            <div class="col-span-full py-16 text-center">
+              <i data-lucide="alert-circle" class="w-8 h-8 text-[#c8410a] mx-auto mb-2"></i>
+              <p class="text-[#1a1208]/60 text-sm font-semibold">Database client not initialized.</p>
+              <p class="text-[#1a1208]/40 text-xs mt-1">Please configure your Supabase credentials using the 'Configure' panel.</p>
+            </div>
+          `;
+          if (window.lucide) {
+            window.lucide.createIcons();
+          }
+        }
+      }
+
+      function renderBooksGrid(books) {
+        const booksGrid = document.getElementById('books-grid');
+        const emptyState = document.getElementById('books-empty-state');
+        
+        // Apply local filtering based on Search UI states
+        const searchQuery = document.getElementById('input-search').value.toLowerCase().trim();
+        const subjectFilter = document.getElementById('filter-subject').value;
+        const priceFilter = document.getElementById('filter-price').value;
+
+        let filtered = books.filter(b => {
+          if (subjectFilter !== 'All' && b.subject !== subjectFilter) return false;
+          if (priceFilter === 'Free' && b.price_type !== 'Free') return false;
+          if (priceFilter === 'Trade' && b.price_type !== 'Trade') return false;
+          if (priceFilter === 'Paid' && b.price_type !== 'Fixed Price') return false;
+          
+          if (searchQuery) {
+            const matchTitle = b.title.toLowerCase().includes(searchQuery);
+            const matchAuthor = b.author.toLowerCase().includes(searchQuery);
+            const matchSubject = b.subject.toLowerCase().includes(searchQuery);
+            return matchTitle || matchAuthor || matchSubject;
+          }
+          return true;
+        });
+
+        document.getElementById('cnt-books').innerText = filtered.length;
+        
+        if (filtered.length === 0) {
+          booksGrid.classList.add('hidden');
+          emptyState.classList.remove('hidden');
+          return;
+        }
+
+        booksGrid.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+        booksGrid.innerHTML = '';
+
+        filtered.forEach(book => {
+          const sellerName = book.profiles?.first_name || 'Alumnus';
+          const sellerCollege = book.profiles?.college || 'Affiliated Campus';
+          const isOwnBook = activeSession && (book.seller_id === activeSession.user.id);
+          
+          let priceBadge = '';
+          if (book.price_type === 'Free') {
+            priceBadge = `<span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 rounded">FREE</span>`;
+          } else if (book.price_type === 'Trade') {
+            priceBadge = `<span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-blue-100 text-blue-800 rounded">BARTER</span>`;
+          } else {
+            priceBadge = `<span class="text-sm font-mono font-bold text-[#c8410a]">$${book.price_amount}</span>`;
+          }
+
+          const card = document.createElement('div');
+          card.className = "bg-white border border-[#1a1208]/10 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col";
+          card.innerHTML = `
+            <div class="p-5 flex-1">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <span class="px-2 py-0.5 text-[9px] font-mono font-bold tracking-wider bg-[#1a1208]/5 text-[#1a1208]/60 uppercase rounded">
+                  ${book.subject}
+                </span>
+                ${priceBadge}
+              </div>
+              <h3 class="font-serif text-base font-bold text-[#1a1208] leading-snug line-clamp-2" title="${book.title}">
+                ${book.title}
+              </h3>
+              <p class="text-xs text-[#1a1208]/60 mt-1">
+                By ${book.author}
+              </p>
+              
+              <!-- Divider -->
+              <div class="my-3 border-t border-[#1a1208]/5"></div>
+
+              <!-- Seller Detail -->
+              <div class="flex items-center gap-2 text-[11px]">
+                <div class="w-6 h-6 rounded-full bg-[#1a1208]/5 flex items-center justify-center text-[#1a1208]/60 shrink-0 font-bold uppercase">
+                  ${sellerName.charAt(0)}
+                </div>
+                <div class="truncate">
+                  <span class="font-bold text-[#1a1208] block leading-tight">${sellerName} ${isOwnBook ? '<span class="text-[9px] bg-[#1a1208] text-white px-1.5 py-0.25 rounded font-bold uppercase ml-1">You</span>' : ''}</span>
+                  <span class="text-[#2563a8] font-semibold text-[9px] block leading-none mt-0.5 truncate">${sellerCollege}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Interactive Action footer -->
+            <div class="p-3 bg-[#faf7f0]/30 border-t border-[#1a1208]/5 shrink-0">
+              ${isOwnBook ? `
+                <button disabled class="w-full text-center py-1.5 text-xs font-bold text-[#1a1208]/40 bg-[#1a1208]/5 rounded border border-transparent">
+                  Your Marketplace Listing
+                </button>
+              ` : `
+                <button onclick="initiateChat('${book.seller_id}', '${book.id}', '${escapeHtml(book.title)}')" class="w-full text-center py-1.5 text-xs font-bold bg-[#1a1208] hover:bg-[#c8410a] hover:shadow text-white rounded transition cursor-pointer flex items-center justify-center gap-1.5">
+                  <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                  <span>Message Seller</span>
+                </button>
+              `}
+            </div>
+          `;
+          booksGrid.appendChild(card);
+        });
+
+        lucide.createIcons();
+      }
+
+      function triggerSearch() {
+        fetchMarketplaceBooks();
+      }
+
+      function escapeHtml(text) {
+        return text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      // ----------------------------------------------------
+      // CHAT CORE SYSTEM
+      // ----------------------------------------------------
+      async function fetchChatsAndMessages() {
+        if (!activeSession) {
+          renderChatPanelPlaceholder("Please sign in or register to negotiate trades and view your messages.");
+          return;
+        }
+
+        if (!window.db) {
+          renderChatPanelPlaceholder("Database connection is not initialized.");
+          return;
+        }
+
+        try {
+          // Fetch messages involving current user
+          const { data: messages, error } = await window.db
+            .from('messages')
+            .select('*')
+            .or(`sender_id.eq.${activeSession.user.id},receiver_id.eq.${activeSession.user.id}`)
+            .order('created_at', { ascending: true });
+
+          if (error) throw error;
+
+          const safeMessages = messages || [];
+
+          // Extract unique peer IDs and book IDs
+          const peerIds = new Set();
+          const bookIds = new Set();
+          safeMessages.forEach(m => {
+            const peerId = m.sender_id === activeSession.user.id ? m.receiver_id : m.sender_id;
+            peerIds.add(peerId);
+            if (m.book_id) {
+              bookIds.add(m.book_id);
+            }
+          });
+
+          // Also include the active chat target if set
+          if (activeChatTargetUserId) {
+            peerIds.add(activeChatTargetUserId);
+          }
+          if (activeChatBookId && activeChatBookId !== "general") {
+            bookIds.add(activeChatBookId);
+          }
+
+          // Fetch peer profiles
+          let profilesMap = {};
+          if (peerIds.size > 0) {
+            const { data: profilesData } = await window.db
+              .from('profiles')
+              .select('id, first_name, college')
+              .in('id', Array.from(peerIds));
+            
+            if (profilesData) {
+              profilesData.forEach(p => {
+                profilesMap[p.id] = p;
+              });
+            }
+          }
+
+          // Fetch books
+          let booksMap = {};
+          if (bookIds.size > 0) {
+            const { data: booksData } = await window.db
+              .from('books')
+              .select('id, title')
+              .in('id', Array.from(bookIds));
+
+            if (booksData) {
+              booksData.forEach(b => {
+                booksMap[b.id] = b;
+              });
+            }
+          }
+
+          renderChatsLayout(safeMessages, profilesMap, booksMap);
+        } catch (e) {
+          console.error("Live chat fetch error:", e);
+          renderChatPanelPlaceholder("Failed to load your chat negotiations: " + (e.message || e));
+        }
+      }
+
+      function renderChatPanelPlaceholder(promptText) {
+        document.getElementById('chat-threads-list').innerHTML = `
+          <div class="p-6 text-center text-xs text-[#1a1208]/50 italic">
+            ${promptText}
+          </div>
+        `;
+        document.getElementById('chat-pane-empty').classList.remove('hidden');
+        document.getElementById('chat-pane-active').classList.add('hidden');
+      }
+
+      async function renderChatsLayout(messages, profilesMap, booksMap) {
+        const threadList = document.getElementById('chat-threads-list');
+        threadList.innerHTML = '';
+
+        if (messages.length === 0 && (!activeChatTargetUserId || !activeChatBookId)) {
+          renderChatPanelPlaceholder("No active text negotiations yet.");
+          return;
+        }
+
+        const threads = {};
+
+        // Build active real threads
+        for (const msg of messages) {
+          const peerId = msg.sender_id === activeSession.user.id ? msg.receiver_id : msg.sender_id;
+          const bookId = msg.book_id || "general";
+          const key = peerId + "_" + bookId;
+
+          if (!threads[key]) {
+            threads[key] = {
+              peerId: peerId,
+              bookId: bookId,
+              lastMessage: msg.content,
+              timestamp: msg.created_at,
+              allMessages: []
+            };
+          }
+          threads[key].allMessages.push(msg);
+          threads[key].lastMessage = msg.content;
+          threads[key].timestamp = msg.created_at;
+        }
+
+        // Build a virtual thread if we initiated a chat but have no messages yet
+        if (activeChatTargetUserId && activeChatBookId) {
+          const key = activeChatTargetUserId + "_" + activeChatBookId;
+          if (!threads[key]) {
+            threads[key] = {
+              peerId: activeChatTargetUserId,
+              bookId: activeChatBookId,
+              lastMessage: "No messages yet. Say hello!",
+              timestamp: new Date().toISOString(),
+              allMessages: [],
+              isVirtual: true
+            };
+          }
+        }
+
+        const threadArray = Object.values(threads).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        threadArray.forEach(thread => {
+          let peerProfile = profilesMap[thread.peerId] || { first_name: "Member " + thread.peerId.slice(0, 4), college: "Associated Campus" };
+          let bookTitle = "Inquiry";
+          
+          const matchedBook = booksMap[thread.bookId];
+          if (matchedBook) {
+            bookTitle = matchedBook.title;
+          }
+
+          const isSelected = (activeChatTargetUserId === thread.peerId && activeChatBookId === thread.bookId);
+          const block = document.createElement('button');
+          block.type = 'button';
+          block.onclick = () => selectThread(thread.peerId, thread.bookId);
+          block.className = `w-full text-left p-4 transition flex items-start gap-3 border-l-4 ${isSelected ? 'bg-[#faf7f0] border-[#c8410a]' : 'hover:bg-[#faf7f0]/50 border-transparent'}`;
+          
+          block.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-[#2563a8]/10 text-[#2563a8] flex items-center justify-center font-bold uppercase shrink-0">
+              ${(peerProfile.first_name || 'M').charAt(0)}
+            </div>
+            <div class="flex-1 truncate">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-xs font-bold text-[#1a1208] block truncate">${peerProfile.first_name || 'Member'}</span>
+                <span class="text-[9px] font-mono text-[#1a1208]/40 shrink-0">${new Date(thread.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+              </div>
+              <span class="text-[9px] font-bold text-[#c8410a] block truncate mt-0.5 leading-none">${bookTitle}</span>
+              <p class="text-[11px] text-[#1a1208]/60 mt-1 truncate leading-relaxed font-medium">
+                ${escapeHtml(thread.lastMessage)}
+              </p>
+            </div>
+          `;
+          threadList.appendChild(block);
+        });
+
+        if (activeChatTargetUserId && activeChatBookId) {
+          const selectedTh = threadArray.find(t => t.peerId === activeChatTargetUserId && t.bookId === activeChatBookId);
+          if (selectedTh) {
+            renderActiveThreadLog(selectedTh.allMessages, activeChatTargetUserId, activeChatBookId, profilesMap, booksMap);
+          } else {
+            renderActiveThreadLog([], activeChatTargetUserId, activeChatBookId, profilesMap, booksMap);
+          }
+        } else {
+          document.getElementById('chat-pane-empty').classList.remove('hidden');
+          document.getElementById('chat-pane-active').classList.add('hidden');
+        }
+      }
+
+      function selectThread(peerId, bookId) {
+        activeChatTargetUserId = peerId;
+        activeChatBookId = bookId;
+        fetchChatsAndMessages();
+      }
+
+      function renderActiveThreadLog(msgs, peerId, bookId, profilesMap, booksMap) {
+        document.getElementById('chat-pane-empty').classList.add('hidden');
+        const activePane = document.getElementById('chat-pane-active');
+        activePane.classList.remove('hidden');
+
+        let peerProfile = profilesMap[peerId] || { first_name: "Campus Member", college: "Institutional Campus Hub" };
+        let bookTitle = "negotiation / chat Inquiry";
+        
+        const matchedBook = booksMap[bookId];
+        if (matchedBook) {
+          bookTitle = matchedBook.title;
+        }
+
+        document.getElementById('active-chat-seller-name').innerText = peerProfile.first_name || 'Campus Member';
+        document.getElementById('active-chat-seller-college').innerText = peerProfile.college || 'Institutional Campus Hub';
+        document.getElementById('active-chat-book-title').innerText = bookTitle;
+
+        const log = document.getElementById('chat-message-log');
+        log.innerHTML = '';
+
+        if (msgs.length === 0) {
+          log.innerHTML = `
+            <div class="text-center py-10 text-xs text-[#1a1208]/40 italic">
+              Say hello! Initiate your discussion regarding "${bookTitle}".
+            </div>
+          `;
+        } else {
+          msgs.forEach(msg => {
+            const isMe = msg.sender_id === activeSession.user.id;
+            const bubble = document.createElement('div');
+            bubble.className = `flex ${isMe ? 'justify-end' : 'justify-start'}`;
+            bubble.innerHTML = `
+              <div class="max-w-[75%] p-3 rounded-lg text-xs leading-relaxed shadow-sm ${isMe ? 'bg-[#1a1208] text-[#faf7f0]' : 'bg-white border border-[#1a1208]/10 text-[#1a1208]'}" style="border-radius: ${isMe ? '12px 12px 0 12px' : '12px 12px 12px 0'}">
+                <p class="font-medium">${escapeHtml(msg.content)}</p>
+                <span class="text-[8px] font-mono opacity-60 mt-1 block text-right leading-none">
+                  ${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </span>
+              </div>
+            `;
+            log.appendChild(bubble);
+          });
+        }
+
+        setTimeout(() => {
+          log.scrollTop = log.scrollHeight;
+        }, 50);
+      }
+
+      function initiateChat(sellerId, bookId, bookTitle) {
+        if (!activeSession) {
+          alert("Please sign in or create an account to initiate discussions with textbook sellers!");
+          openAuthModal('login');
+          return;
+        }
+
+        if (activeSession.user.id === sellerId) {
+          alert("You are the seller of this textbook.");
+          return;
+        }
+
+        activeChatTargetUserId = sellerId;
+        activeChatBookId = bookId;
+        switchTab('chats');
+      }
+
+      async function handleSendMessage(e) {
+        if (e && typeof e.preventDefault === 'function') {
+          e.preventDefault();
+        }
+
+        const sender_id = activeSession?.user?.id;
+        const receiver_id = activeChatTargetUserId;
+        const book_id = activeChatBookId === "general" ? null : activeChatBookId;
+
+        // Strict guard clause to verify all identifiers are defined and valid
+        if (!sender_id || !receiver_id || !activeChatBookId) {
+          console.error("Message validation failed. Aborting insert to prevent foreign key violation:", {
+            sender_id,
+            receiver_id,
+            book_id: activeChatBookId
+          });
+          return;
+        }
+
+        const input = document.getElementById('chat-message-input');
+        const content = input.value.trim();
+        if (!content) return;
+
+        if (window.db) {
+          const { error } = await window.db.from('messages').insert({
+            book_id: book_id,
+            sender_id: sender_id,
+            receiver_id: receiver_id,
+            content: content
+          });
+
+          if (error) {
+            alert("Error sending message: " + error.message);
+          } else {
+            input.value = '';
+            fetchChatsAndMessages();
+          }
+        } else {
+          alert("Database connection not initialized.");
+        }
+      }
+
+      // ----------------------------------------------------
+      // GENERAL SQL BLUEPRINT MODAL
+      // ----------------------------------------------------
+      function openSchemaHelpModal() {
+        document.getElementById('schema-help-modal').classList.remove('hidden');
+      }
+
+      function closeSchemaHelpModal() {
+        document.getElementById('schema-help-modal').classList.add('hidden');
+      }
+
+      // UI Fallback Synchronization
+      function refreshUI() {
+        if (activeTab === 'marketplace') {
+          fetchMarketplaceBooks();
+        } else {
+          fetchChatsAndMessages();
+        }
+      }
+    </script>
+  </body>
+</html>
